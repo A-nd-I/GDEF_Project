@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# LLms and editors
+.claude/
+CLAUDE.md
+.docs/
