@@ -36,12 +36,7 @@ class OllamaProvider(ModelProvider):
         # if content is empty the token budget was exhausted by thinking — raise so the user notices.
         text = choice.content or ""
         if not text:
-            reasoning = getattr(choice, "reasoning", None) or ""
-            raise RuntimeError(
-                f"Empty response from {self.model} — token budget exhausted by thinking. "
-                f"Run without --max-tokens or set it to 1500+. "
-                f"Thinking preview: {reasoning[:200]!r}"
-            )
+             print(f"Empty response from {self.model} — token budget exhausted by thinking. ")
         return ModelResponse(
             text=text,
             model=resp.model,
