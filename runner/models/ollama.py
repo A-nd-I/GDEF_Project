@@ -1,0 +1,41 @@
+"""Ollama provider — uses Ollama's OpenAI-compatible endpoint (local, no key)."""
+
+from __future__ import annotations
+
+import time
+
+from openai import OpenAI
+
+from .base import ModelProvider, ModelResponse
+
+_CLIENT: OpenAI | None = None
+
+
+def _client() -> OpenAI:
+    global _CLIENT
+    if _CLIENT is None:
+        _CLIENT = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    return _CLIENT
+
+
+class OllamaProvider(ModelProvider):
+    name = "ollama"
+
+    def generate(self, messages: list[dict[str, str]]) -> ModelResponse:
+        t0 = time.perf_counter()
+        resp = _client().chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=self.temperature,
+            seed=self.seed,
+        )
+        latency = (time.perf_counter() - t0) * 1000
+        choice = resp.choices[0].message
+        return ModelResponse(
+            text=choice.content or "",
+            model=resp.model,
+            provider=self.name,
+            token_count=resp.usage.total_tokens if resp.usage else None,
+            response_latency_ms=round(latency, 3),
+            raw=resp.model_dump(),
+        )
