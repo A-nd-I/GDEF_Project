@@ -219,6 +219,6 @@ __marimo__/
 
 
 # LLms and editors
-.claude/
+claude/
 CLAUDE.md
-.docs/
+docs/
