@@ -28,11 +28,22 @@ class OllamaProvider(ModelProvider):
             messages=messages,
             temperature=self.temperature,
             seed=self.seed,
+            max_tokens=self.max_tokens,
         )
         latency = (time.perf_counter() - t0) * 1000
         choice = resp.choices[0].message
+        # ponytail: qwen3 thinking models put response in content; reasoning is the CoT scratchpad.
+        # if content is empty the token budget was exhausted by thinking — raise so the user notices.
+        text = choice.content or ""
+        if not text:
+            reasoning = getattr(choice, "reasoning", None) or ""
+            raise RuntimeError(
+                f"Empty response from {self.model} — token budget exhausted by thinking. "
+                f"Run without --max-tokens or set it to 1500+. "
+                f"Thinking preview: {reasoning[:200]!r}"
+            )
         return ModelResponse(
-            text=choice.content or "",
+            text=text,
             model=resp.model,
             provider=self.name,
             token_count=resp.usage.total_tokens if resp.usage else None,

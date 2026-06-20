@@ -43,6 +43,8 @@ def parse_args(argv=None):
     p.add_argument("--reps", type=int, default=1)
     p.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--max-tokens", type=int, default=None,
+                   help="Limit response length (useful for local models)")
     p.add_argument("--no-system-prompt", action="store_true",
                    help="Send no system prompt (test the model 'bare')")
     p.add_argument("--dry-run", action="store_true",
@@ -84,7 +86,8 @@ def main(argv=None) -> int:
     logger = setup_logging(log_path=f"{args.output}/{run_id}.log")
     logger.info("Run %s | model=%s | reps=%d", run_id, args.model, args.reps)
 
-    provider = get_provider(args.model, temperature=args.temperature, seed=args.seed)
+    provider = get_provider(args.model, temperature=args.temperature, seed=args.seed,
+                            max_tokens=args.max_tokens)
     system_prompt = None if args.no_system_prompt else SYSTEM_PROMPT
     manifest = run_evaluation(scenarios=scenarios, provider=provider,
                               output_dir=args.output, repetitions=args.reps,

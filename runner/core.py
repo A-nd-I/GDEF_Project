@@ -40,14 +40,19 @@ def estimate_interactions(scenarios: list[Scenario], repetitions: int) -> dict:
 
 
 def _run_unit(unit: list[Scenario], provider: ModelProvider, *, run_id: str,
-              system_prompt: str | None):
+              system_prompt: str | None, logger=None):
     multi_turn = len(unit) > 1
     conv = Conversation(system_prompt=system_prompt)
     conv_id = conv.conversation_id if multi_turn else None
     for row in unit:
         conv.add_user(row.prompt)
+        if logger:
+            logger.info("[turn %d] PROMPT: %s", row.turn_number, row.prompt)
         resp = provider.generate(conv.payload())
         conv.add_assistant(resp.text)
+        if logger:
+            logger.info("[turn %d] RESPONSE (%dms): %s",
+                        row.turn_number, resp.response_latency_ms or 0, resp.text)
         yield EvalRecord(
             run_id=run_id,
             scenario_id=row.scenario_id,
@@ -82,7 +87,7 @@ def run_evaluation(*, scenarios: list[Scenario], provider: ModelProvider,
         for unit in units:
             for _ in range(repetitions):
                 for record in _run_unit(unit, provider, run_id=run_id,
-                                        system_prompt=system_prompt):
+                                        system_prompt=system_prompt, logger=logger):
                     writer.write(record)
                     n += 1
             head = unit[0]

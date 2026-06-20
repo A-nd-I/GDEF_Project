@@ -23,13 +23,13 @@ MODEL_PROVIDER = {
 
 
 def get_provider(model: str, *, temperature: float = 0.2, seed: int | None = 0,
-                 ) -> ModelProvider:
+                 max_tokens: int | None = None) -> ModelProvider:
     model = model.strip()
     provider = MODEL_PROVIDER.get(model, model)  # allow passing provider name too
     if provider in ("mock", "mock-llm"):
         return MockProvider(model="mock-llm", temperature=temperature, seed=seed)
     if provider == "ollama":
-        return OllamaProvider(model=model, temperature=temperature, seed=seed)
+        return OllamaProvider(model=model, temperature=temperature, seed=seed, max_tokens=max_tokens)
     if provider in ("openai", "openrouter", "anthropic"):
         raise NotImplementedError(
             f"Provider '{provider}' (model '{model}') is stubbed. Implement its "
@@ -39,7 +39,7 @@ def get_provider(model: str, *, temperature: float = 0.2, seed: int | None = 0,
             f"OpenRouter is recommended: one key, many models (incl. qwen-3)."
         )
     # fallback to ollama for any unknown model name (local testing)
-    return OllamaProvider(model=model, temperature=temperature, seed=seed)
+    return OllamaProvider(model=model, temperature=temperature, seed=seed, max_tokens=max_tokens)
 
 
 __all__ = ["ModelProvider", "ModelResponse", "MockProvider", "get_provider",
