@@ -12,15 +12,6 @@ Python 3.11 or later. Install dependencies:
 pip install -r requirements.txt
 ```
 
-### For local models (Ollama)
-Install Ollama and pull a model:
-```bash
-brew install ollama        # macOS
-ollama pull qwen3.5:2b     # or any model you want
-ollama serve               # start the local server
-```
-Ollama must be running before you call `run.py` with a local model.
-
 ### For cloud models (OpenRouter)
 1. Create an account at [openrouter.ai](https://openrouter.ai) and get an API key.
 2. Copy `.env.example` to `.env` and add your key:
@@ -38,17 +29,11 @@ Never commit `.env` — it is gitignored.
 # 1. Validate your dataset against controlled lists
 python run.py --scenarios data/scenarios_sample.csv --validate
 
-# 2. Count interactions without running anything
-python run.py --scenarios data/scenarios_sample.csv --dry-run
-
-# 3. Offline smoke test — no API key required
+# 2. Offline smoke test — no API key required
 python run.py --model mock-llm --scenarios data/scenarios_sample.csv
 
-# 4. Run with OpenRouter (cloud)
+# 3. Run with OpenRouter (cloud)
 python run.py --model qwen/qwen3.5-flash-02-23 --scenarios data/scenarios_sample.csv
-
-# 5. Run with Ollama (local)
-python run.py --model qwen3.5:2b --scenarios data/scenarios_sample.csv
 ```
 
 Outputs land in `outputs/{run_id}/` — each run gets its own folder and nothing is overwritten.
@@ -164,7 +149,6 @@ python run.py \
   --max-tokens    2000                        # max response tokens (optional)
   --no-reasoning                              # disable chain-of-thought on OpenRouter models
   --no-system-prompt                          # omit the GDEF system prompt
-  --dry-run                                   # count interactions, don't run
   --validate                                  # check CSV against controlled lists, don't run
 ```
 
@@ -177,9 +161,7 @@ python run.py \
 | `mock-llm` | Built-in | Offline, no key needed. Good for pipeline testing. |
 | `gpt-5-mini` | OpenRouter | Registered shorthand. Needs `OPEN_ROUTER_API_KEY`. |
 | `qwen/qwen3.5-flash-02-23` | OpenRouter | Registered shorthand. Cheap, fast. Needs `OPEN_ROUTER_API_KEY`. |
-| `qwen3.5:2b` | Ollama | Local, free, slow. Needs Ollama running. |
 | any `org/model` slug | OpenRouter | Any model on openrouter.ai — use its exact slug. |
-| any bare name | Ollama | Falls through to Ollama automatically. |
 
 ### Reasoning (chain-of-thought)
 By default, reasoning is **enabled** on OpenRouter models. If a model returns empty responses (its full token budget is used thinking), add `--no-reasoning`:
