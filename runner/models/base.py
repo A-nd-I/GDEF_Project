@@ -24,11 +24,13 @@ class ModelProvider(abc.ABC):
     name: str = "abstract" 
 
     def __init__(self, model: str, temperature: float = 0.2,
-                 seed: int | None = 0, max_tokens: int | None = None):
+                 seed: int | None = 0, max_tokens: int | None = None,
+                 reasoning: bool = True):
         self.model = model
         self.temperature = temperature
         self.seed = seed
         self.max_tokens = max_tokens
+        self.reasoning = reasoning
 
     @abc.abstractmethod
     def generate(self, messages: list[dict[str, str]]) -> ModelResponse:
