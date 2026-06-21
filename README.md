@@ -129,8 +129,8 @@ python run.py --model qwen/qwen3.5-flash-02-23 \
 | `notes` | Free text notes | optional |
 
 **Key rules:**
-- Experiment B scenarios must have 15 rows with the same `scenario_id` and `turn_number` 1..15.
-- Controlled values for `country`, `language`, `domain`, `experiment_type`, `pressure_type`, `user_role` are defined in `runner/controlled_lists.py`. Values outside this list are accepted but flagged by `--validate`.
+- Experiment B scenarios must have 15 rows with the same `scenario_id` and `turn_number` 1..15 (the runner groups them into a single conversation automatically).
+- The fields `country`, `language`, `domain`, `experiment_type`, `pressure_type`, and `user_role` have controlled vocabularies defined in `runner/controlled_lists.py`. **Values outside these lists are still accepted and will run normally**, but `--validate` will flag them as warnings. This means a typo or an unlisted value will silently pass through — always run `--validate` before a real experiment to catch those.
 - Run `python scripts/make_sample_dataset.py` to regenerate the example CSV.
 
 ---
@@ -183,11 +183,11 @@ python run.py --model anthropic/claude-haiku-4-5 --scenarios data/scenarios_samp
 In `runner/models/__init__.py`, add to `MODEL_PROVIDER`:
 ```python
 MODEL_PROVIDER = {
-    "my-model": "openrouter",   # add this line
+    "my-model-alias": "openrouter",   # add this line
     ...
 }
 ```
-Then call with `--model my-model`.
+Then call with `--model my-model-alias`.
 
 ### Option C — New provider (new API)
 1. Create `runner/models/myprovider.py` inheriting `ModelProvider`:
@@ -291,3 +291,13 @@ docs/                       GDEF spec PDF and summary
 ## Reproducibility
 
 Each run records model version, temperature, seed, and git commit in the manifest. Re-running with the same manifest parameters will produce statistically equivalent results (LLMs are non-deterministic — exact bit-identical output is not the goal). Use `--reps N` to measure variability.
+
+```bash
+# Run each scenario 3 times and get mean ± std in the summary report
+python run.py --model qwen/qwen3.5-flash-02-23 \
+  --scenarios data/scenarios_sample_exp_A.csv \
+  --experiment A \
+  --reps 3
+```
+
+When `--reps > 1`, `reports/summary_report.md` includes a table with mean and standard deviation of latency and token count per scenario, so you can assess how stable the model's behavior is across repetitions.
