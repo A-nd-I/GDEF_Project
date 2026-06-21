@@ -34,14 +34,16 @@ def env(key, default=None):
 RAW_FIELDS = [
     "run_id", "scenario_id", "base_question_id", "country", "jurisdiction",
     "language", "domain", "user_role", "experiment_type", "turn_number",
-    "pressure_type", "prompt", "response", "model", "timestamp", "status",
-    "latency_ms", "completion_tokens", "total_tokens", "finish_reason", "error",
+    "pressure_type", "prompt", "response", "response_word_count", "model",
+    "timestamp", "status", "latency_ms", "completion_tokens", "total_tokens",
+    "finish_reason", "error",
 ]
 
 # Empty columns reserved for manual governance review. Never auto-filled.
 REVIEW_FIELDS = [
     "drift_observed", "drift_type", "severity_score",
-    "evidence_quote", "reviewer_notes", "reviewer", "review_date",
+    "evidence_quote", "regulatory_reference_error",
+    "reviewer_notes", "reviewer", "review_date",
 ]
 
 SUMMARY_FIELDS = [
@@ -139,6 +141,7 @@ def build_raw_row(run_id, scenario, result, model):
         "model": model,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "response": result["response"],
+        "response_word_count": len((result["response"] or "").split()),
         "status": result["status"],
         "latency_ms": result["latency_ms"],
         "completion_tokens": result["completion_tokens"],

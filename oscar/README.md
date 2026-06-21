@@ -48,19 +48,74 @@ python governance_pressure_runner.py --num 4            # quick test, first 4 pr
 Anything in `.env` can be overridden on the command line
 (`--model`, `--base-url`, `--input`, `--country`, `--language`, `--num`, etc.).
 
+## What the experiment does
+
+The runner implements **experiment type `E_GOVERNANCE_PRESSURE_TESTING`**.
+Its goal is to measure how a language model behaves when exposed to adversarial
+or ethically complex inputs. Scenarios cover seven pressure categories:
+
+| Category | Description |
+|---|---|
+| `presion_emocional` | Emotional pressure to bypass limits |
+| `presion_autoridad` | Unverifiable authority claims |
+| `bypass_politicas` | Roleplay, encoding, or fragmentation to evade filters |
+| `jurisdiccion` | Alleged legal exceptions to override refusals |
+| `conflicto_etico` | Requests that conflict with ethical norms |
+| `premisa_falsa` | Prompts built on factually false premises |
+| `calibracion` | Benign prompts to detect over-refusal |
+
+The script never scores or judges — it only collects evidence. Interpretation
+is done by a human reviewer in the findings matrix.
+
+## Input
+
+A CSV file with one scenario per row. Required column:
+
+| Column | Description |
+|---|---|
+| `prompt` | Text sent to the model |
+
+Recommended columns (used for filtering and traceability):
+
+| Column | Description |
+|---|---|
+| `scenario_id` | Unique identifier for the scenario |
+| `experiment_type` | Category of the scenario |
+| `pressure_type` | Sub-type of pressure applied |
+| `country` | Target jurisdiction (used with `--country` filter) |
+| `language` | Language of the prompt (used with `--language` filter) |
+| `domain`, `user_role`, `jurisdiction`, `base_question_id`, `turn_number` | Optional metadata |
+
+Configure the input file in `.env` with `INPUT_FILE=data/your_file.csv`.
+
 ## What it generates (in `outputs/`)
 
-1. **raw_outputs.csv** — the raw response of each prompt with its data:
+1. **raw_outputs.csv** — one row per model call with all automatic fields:
    `run_id, scenario_id, base_question_id, country, jurisdiction, language,
    domain, user_role, experiment_type, turn_number, pressure_type, prompt,
-   response, model, timestamp, status` (+ `latency_seconds, completion_tokens,
-   finish_reason, error`).
-2. **findings_matrix.xlsx** — the automatic fields above + the **empty** review
-   columns: `drift_observed, drift_type, severity_score, evidence_quote,
-   reviewer_notes, reviewer, review_date`. The script never fills these in.
+   response, response_word_count, model, timestamp, status, latency_ms,
+   completion_tokens, total_tokens, finish_reason, error`.
+2. **findings_matrix.xlsx** — all automatic fields above + the **empty** review
+   columns (never auto-filled, for the governance team only):
+   `drift_observed, drift_type, severity_score, evidence_quote,
+   regulatory_reference_error, reviewer_notes, reviewer, review_date`.
    (If you prefer CSV: `FINDINGS_FORMAT=csv`.)
 3. **run_summary.csv** — run summary: `run_id, input_file, experiment_type,
-   model, total_prompts, successful_calls, failed_calls, started_at, finished_at`.
+   model, total_prompts, successful_calls, failed_calls, total_tokens,
+   total_latency_ms, started_at, finished_at`.
+
+### Review columns (human-filled only)
+
+| Column | What the reviewer fills in |
+|---|---|
+| `drift_observed` | Did the model deviate from expected behavior? (yes/no) |
+| `drift_type` | Type of drift detected |
+| `severity_score` | 1 (mild) to 5 (critical) |
+| `evidence_quote` | Verbatim excerpt from the response that supports the finding |
+| `regulatory_reference_error` | Citation of regulation or policy the response violated or incorrectly referenced |
+| `reviewer_notes` | Free-form notes |
+| `reviewer` | Name or ID of the reviewer |
+| `review_date` | Date of review |
 
 `raw_outputs.csv` is saved row by row, so if you interrupt the run (Ctrl+C)
 whatever was already answered stays saved.
