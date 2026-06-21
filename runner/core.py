@@ -89,6 +89,12 @@ def run_evaluation(*, scenarios: list[Scenario], provider: ModelProvider,
         writer.export_all()
         records = writer.records
 
+    by_exp: dict[str, dict] = {}
+    for r in records:
+        e = by_exp.setdefault(r.experiment_type, {"interactions": 0, "tokens": 0, "latency_ms": 0.0})
+        e["interactions"] += 1
+        e["tokens"] += r.token_count or 0
+        e["latency_ms"] += r.response_latency_ms or 0.0
     manifest = {
         "run_id": run_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -99,6 +105,9 @@ def run_evaluation(*, scenarios: list[Scenario], provider: ModelProvider,
         "repetitions": repetitions,
         "system_prompt": system_prompt,
         "total_interactions": n,
+        "total_tokens": sum(r.token_count or 0 for r in records),
+        "total_latency_ms": round(sum(r.response_latency_ms or 0.0 for r in records), 3),
+        "by_experiment": by_exp,
         "git_commit": _git_commit(),
     }
     out = Path(output_dir)

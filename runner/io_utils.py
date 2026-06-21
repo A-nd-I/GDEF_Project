@@ -18,6 +18,24 @@ FINDINGS_COLUMNS = [
     "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
 ]
 
+# annotation_sheet.csv — for human reviewers
+ANNOTATION_COLUMNS = [
+    "run_id", "scenario_id", "base_question_id", "country", "language", "domain",
+    "user_role", "experiment_type", "turn_number", "pressure_type",
+    "transparency_score", "jurisdiction_awareness_score", "human_oversight_score",
+    "reliability_score", "context_awareness_score", "pressure_resistance_score",
+    "consistency_score", "unsupported_certainty_score", "overall_governance_score",
+    "overall_governance_classification", "drift_observed", "drift_type",
+    "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
+]
+
+# run_stats.csv — technical metadata linkable by run_id + scenario_id + turn_number
+RUN_STATS_COLUMNS = [
+    "run_id", "scenario_id", "turn_number", "model", "provider",
+    "temperature", "seed", "response_latency_ms", "token_count",
+    "timestamp", "conversation_id",
+]
+
 
 def _split(cell: str) -> list[str]:
     return [p.strip() for p in (cell or "").split(LIST_SEP) if p.strip()]
@@ -85,6 +103,12 @@ class ResultWriter:
                          [r.to_csv_row() for r in self._rows])
         fm_rows = [{c: r.to_dict().get(c, "") for c in FINDINGS_COLUMNS} for r in self._rows]
         self._export_csv("findings_matrix.csv", FINDINGS_COLUMNS, fm_rows)
+        self._export_csv("annotation_sheet.csv", ANNOTATION_COLUMNS,
+                         [{c: r.to_dict().get(c, "") for c in ANNOTATION_COLUMNS}
+                          for r in self._rows])
+        self._export_csv("run_stats.csv", RUN_STATS_COLUMNS,
+                         [{c: r.to_dict().get(c, "") for c in RUN_STATS_COLUMNS}
+                          for r in self._rows])
         self._export_model_comparison()
         self._export_csv("top_findings.csv", FINDINGS_COLUMNS, [])
         return {"records": len(self._rows)}

@@ -19,7 +19,8 @@ EXP_PREFIX = {"A": "A_", "B": "B_", "C": "C_"}
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="GDEF evaluation runner")
     p.add_argument("--model", default="mock-llm")
-    p.add_argument("--scenarios", default="data/scenarios_sample.csv")
+    p.add_argument("--scenarios", nargs="+", default=["data/scenarios_sample.csv"],
+                   metavar="CSV", help="one or more scenario CSV files")
     p.add_argument("--output", default="outputs")
     p.add_argument("--experiment", default="all",
                    help="all | A | B | C (comma-separated)")
@@ -27,6 +28,8 @@ def parse_args(argv=None):
     p.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--max-tokens", type=int, default=None)
+    p.add_argument("--no-reasoning", action="store_true",
+                   help="disable chain-of-thought reasoning on OpenRouter models")
     p.add_argument("--no-system-prompt", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--validate", action="store_true")
@@ -43,7 +46,10 @@ def filter_experiments(scenarios, value):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
-    scenarios = filter_experiments(load_scenarios(args.scenarios), args.experiment)
+    all_scenarios = []
+    for csv_path in args.scenarios:
+        all_scenarios.extend(load_scenarios(csv_path))
+    scenarios = filter_experiments(all_scenarios, args.experiment)
 
     if args.validate:
         warns = [w for s in scenarios for w in validate_scenario(s)]
@@ -69,7 +75,7 @@ def main(argv=None) -> int:
     logger.info("Run %s | model=%s | reps=%d", run_id, args.model, args.reps)
 
     provider = get_provider(args.model, temperature=args.temperature, seed=args.seed,
-                            max_tokens=args.max_tokens)
+                            max_tokens=args.max_tokens, reasoning=not args.no_reasoning)
     system_prompt = None if args.no_system_prompt else SYSTEM_PROMPT
     manifest = run_evaluation(scenarios=scenarios, provider=provider,
                               output_dir=run_dir, repetitions=args.reps,

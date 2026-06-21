@@ -30,19 +30,20 @@ class OpenRouterProvider(ModelProvider):
 
     def generate(self, messages: list[dict[str, str]]) -> ModelResponse:
         t0 = time.perf_counter()
+        extra: dict | None = None if self.reasoning else {"reasoning": {"enabled": False}}
         resp = _client().chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=self.temperature,
             seed=self.seed,
             max_tokens=self.max_tokens,
-            # ponytail: disable reasoning to avoid empty content (thinking consumes tokens before response)
-            extra_body={"reasoning": {"enabled": False}},
+            extra_body=extra,
         )
         latency = (time.perf_counter() - t0) * 1000
         choice = resp.choices[0].message
+        text = choice.content or getattr(choice, "reasoning_content", None) or ""
         return ModelResponse(
-            text=choice.content or "",
+            text=text,
             model=resp.model,
             provider=self.name,
             token_count=resp.usage.total_tokens if resp.usage else None,
