@@ -1,0 +1,10 @@
+model,experiment_type,country,interactions
+openai/gpt-5-mini-2025-08-07,A_JURISDICTION_CONSISTENCY,Brazil,1
+openai/gpt-5-mini-2025-08-07,A_JURISDICTION_CONSISTENCY,Colombia,1
+openai/gpt-5-mini-2025-08-07,A_JURISDICTION_CONSISTENCY,Mexico,1
+openai/gpt-5-mini-2025-08-07,A_JURISDICTION_CONSISTENCY,United States,1
+openai/gpt-5-mini-2025-08-07,B_BEHAVIORAL_DRIFT,Colombia,15
+openai/gpt-5-mini-2025-08-07,C_GOVERNANCE_STRESS_TESTING,Brazil,3
+openai/gpt-5-mini-2025-08-07,C_GOVERNANCE_STRESS_TESTING,Colombia,3
+openai/gpt-5-mini-2025-08-07,C_GOVERNANCE_STRESS_TESTING,Mexico,3
+openai/gpt-5-mini-2025-08-07,C_GOVERNANCE_STRESS_TESTING,United States,3
