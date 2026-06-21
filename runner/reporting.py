@@ -1,10 +1,7 @@
-"""Reporting fallback (spec section 11): a plain-language summary_report.md
-generated from the same outputs, so the demo never depends on the frontend.
-"""
-
 from __future__ import annotations
 
-from collections import Counter
+import statistics
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from .schemas import EvalRecord
@@ -22,7 +19,8 @@ def write_summary_report(path: str | Path, *, records: list[EvalRecord],
         f"- Run ID: `{manifest.get('run_id')}`",
         f"- Timestamp: {manifest.get('timestamp')}",
         f"- Models: {', '.join(sorted(by_model)) or '(none)'}",
-        f"- Temperature: {manifest.get('temperature')}",
+        f"- Temperature: {manifest.get('temperature')} | Seed: {manifest.get('seed')}",
+        f"- Repetitions: {manifest.get('repetitions', 1)}",
         f"- Total interactions: {len(records)}",
         "",
         "## Interactions by experiment",
@@ -32,19 +30,33 @@ def write_summary_report(path: str | Path, *, records: list[EvalRecord],
     lines += ["", "## Interactions by country"]
     for c, n in sorted(by_country.items()):
         lines.append(f"- {c}: {n}")
+
+    reps = manifest.get("repetitions", 1)
+    if reps > 1 and records:
+        lines += ["", "## Variability across repetitions"]
+        by_scenario: dict[str, list[EvalRecord]] = defaultdict(list)
+        for r in records:
+            by_scenario[f"{r.scenario_id}_t{r.turn_number}"].append(r)
+
+        lines.append("| scenario | turn | latency_mean_ms | latency_std_ms | tokens_mean | tokens_std |")
+        lines.append("|----------|------|-----------------|----------------|-------------|------------|")
+        for key, recs in sorted(by_scenario.items()):
+            latencies = [r.response_latency_ms for r in recs if r.response_latency_ms is not None]
+            tokens = [r.token_count for r in recs if r.token_count is not None]
+            lat_mean = f"{statistics.mean(latencies):.0f}" if latencies else "-"
+            lat_std = f"{statistics.stdev(latencies):.0f}" if len(latencies) > 1 else "-"
+            tok_mean = f"{statistics.mean(tokens):.0f}" if tokens else "-"
+            tok_std = f"{statistics.stdev(tokens):.0f}" if len(tokens) > 1 else "-"
+            sid = recs[0].scenario_id
+            turn = recs[0].turn_number
+            lines.append(f"| {sid} | {turn} | {lat_mean} | {lat_std} | {tok_mean} | {tok_std} |")
+
     lines += [
         "",
-        "## What was tested",
-        "Governance drift across jurisdictions (A), long multi-turn pressure (B), "
-        "and direct stress (C), using the GDEF framework. Raw outputs are in "
-        "`raw_outputs.jsonl`; reviewer scoring goes in `findings_matrix.csv`.",
-        "",
         "## Reproducibility",
-        "Outputs were produced by the runner from the scenario dataset using a "
-        "fixed system prompt and logged model/version, temperature, and seed. "
-        "See the run manifest for exact parameters.",
+        f"Git commit: `{manifest.get('git_commit') or 'unknown'}`",
+        "Raw outputs: `raw_outputs.jsonl` — reviewer scoring: `findings_matrix.csv`.",
         "",
-        "_Scored findings (drift type, severity, evidence quotes) are added after "
-        "annotation; this fallback report covers what ran and how to reproduce it._",
+        "_Scored findings are added after annotation._",
     ]
     Path(path).write_text("\n".join(lines), encoding="utf-8")

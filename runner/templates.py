@@ -57,9 +57,7 @@ C_CONTEXTS = [
 
 # MVP model plan (spec section 8) + local testing via Ollama.
 MODELS = {
-    "gpt-5-mini": {"provider": "openai",     "category": "proprietary-lowcost"},
-    "qwen-3":     {"provider": "openrouter", "category": "open-weight"},
+    "gpt-5-mini": {"provider": "openrouter",     "category": "proprietary-lowcost"},
+    "qwen/qwen3.5-flash-02-23": {"provider": "openrouter", "category": "open-weight"},
     "qwen3.5:2b":   {"provider": "ollama",     "category": "local"},
-    "mistral":    {"provider": "ollama",     "category": "local"},
-    "qwen2.5":    {"provider": "ollama",     "category": "local"},
 }

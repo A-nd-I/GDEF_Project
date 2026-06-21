@@ -1,9 +1,3 @@
-"""Loading scenarios and writing every output the spec requires (section 11):
-raw_outputs.jsonl (lossless), raw_outputs.csv, findings_matrix.csv (annotation
-template), model_comparison.csv, top_findings.csv, and a run manifest. A
-summary_report.md fallback is produced by reporting.py.
-"""
-
 from __future__ import annotations
 
 import csv
@@ -13,8 +7,6 @@ from pathlib import Path
 
 from .schemas import CSV_FIELDS, LIST_SEP, EvalRecord, Scenario
 
-# Findings matrix columns (spec section 10.1). Score/annotation columns are left
-# empty for the reviewers (manual / semi-manual scoring per spec section 12.2).
 FINDINGS_COLUMNS = [
     "run_id", "scenario_id", "base_question_id", "country", "jurisdiction",
     "language", "domain", "user_role", "experiment_type", "turn_number",
@@ -62,12 +54,6 @@ def load_scenarios(path: str | Path) -> list[Scenario]:
 
 
 def group_units(scenarios: list[Scenario]) -> list[list[Scenario]]:
-    """Group rows into execution units.
-
-    - B_BEHAVIORAL_DRIFT: rows sharing scenario_id become ONE multi-turn unit,
-      ordered by turn_number (one conversation).
-    - A and C: each row is its own single-turn unit.
-    """
     units: list[list[Scenario]] = []
     b_groups: dict[str, list[Scenario]] = {}
     for s in scenarios:
@@ -82,8 +68,6 @@ def group_units(scenarios: list[Scenario]) -> list[list[Scenario]]:
 
 
 class ResultWriter:
-    """Streams to raw_outputs.jsonl and accumulates for the CSV exports."""
-
     def __init__(self, output_dir: str | Path):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -99,14 +83,10 @@ class ResultWriter:
     def export_all(self) -> dict:
         self._export_csv("raw_outputs.csv", CSV_FIELDS,
                          [r.to_csv_row() for r in self._rows])
-        # findings_matrix: captured fields + empty annotation/score columns
-        fm_rows = []
-        for r in self._rows:
-            d = r.to_dict()
-            fm_rows.append({c: d.get(c, "") for c in FINDINGS_COLUMNS})
+        fm_rows = [{c: r.to_dict().get(c, "") for c in FINDINGS_COLUMNS} for r in self._rows]
         self._export_csv("findings_matrix.csv", FINDINGS_COLUMNS, fm_rows)
         self._export_model_comparison()
-        self._export_csv("top_findings.csv", FINDINGS_COLUMNS, [])  # filled post-scoring
+        self._export_csv("top_findings.csv", FINDINGS_COLUMNS, [])
         return {"records": len(self._rows)}
 
     def _export_csv(self, name: str, fields: list[str], rows: list[dict]) -> None:
@@ -117,7 +97,6 @@ class ResultWriter:
                 w.writerow(row)
 
     def _export_model_comparison(self) -> None:
-        # Pre-scoring scaffold: interaction counts by model/experiment/country.
         counts = Counter((r.model, r.experiment_type, r.country) for r in self._rows)
         fields = ["model", "experiment_type", "country", "interactions"]
         rows = [{"model": m, "experiment_type": e, "country": c, "interactions": n}

@@ -1,11 +1,3 @@
-"""Core engine: turns scenario rows into execution units and runs them.
-
-Single-turn units (A, C) are independent calls. Multi-turn units (B) are one
-conversation replayed turn by turn. Everything is sequential within a unit;
-units are independent and could be parallelised later (asyncio / thread pool +
-rate limiting). Outputs follow the spec (section 11).
-"""
-
 from __future__ import annotations
 
 import subprocess
@@ -71,10 +63,11 @@ def _run_unit(unit: list[Scenario], provider: ModelProvider, *, run_id: str,
             model=resp.model,
             provider=resp.provider,
             temperature=provider.temperature,
+            seed=provider.seed,
             response_latency_ms=resp.response_latency_ms,
             token_count=resp.token_count,
             conversation_id=conv_id,
-            metadata={"raw": resp.raw},  # raw output preservation
+            metadata={"raw": resp.raw},
         )
 
 

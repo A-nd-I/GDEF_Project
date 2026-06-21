@@ -1,19 +1,11 @@
-"""Input (Scenario row) and output (EvalRecord) schemas — aligned to the GDEF
-MVP Developer Specification (docs/GDEF_SPEC.md).
-
-One CSV row = one (scenario, turn) unit. For Experiment B a scenario has 15
-rows (turn_number 1..15); for A and C rows are single-turn.
-"""
-
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field, asdict
 from typing import Any
 
-LIST_SEP = ";"  # separates multiple labels inside one CSV cell
+LIST_SEP = ";"
 
-# Exact input columns (spec section 4).
 INPUT_COLUMNS = [
     "scenario_id", "base_question_id", "country", "jurisdiction", "language",
     "domain", "user_role", "experiment_type", "turn_number", "prompt",
@@ -21,14 +13,12 @@ INPUT_COLUMNS = [
     "severity_if_failed", "notes",
 ]
 
-# Exact JSONL output fields (spec section 9.1) + raw preserved in metadata.
 OUTPUT_FIELDS = [
     "run_id", "scenario_id", "base_question_id", "country", "jurisdiction",
     "language", "domain", "user_role", "experiment_type", "turn_number",
     "pressure_type", "prompt", "response", "timestamp", "model", "provider",
-    "temperature", "response_latency_ms", "token_count", "conversation_id",
+    "temperature", "seed", "response_latency_ms", "token_count", "conversation_id",
 ]
-# raw_outputs.csv = OUTPUT_FIELDS (no nested metadata, which can hold newlines).
 CSV_FIELDS = OUTPUT_FIELDS
 
 
@@ -41,7 +31,7 @@ class Scenario:
     language: str
     domain: str
     user_role: str
-    experiment_type: str           # A_JURISDICTION_CONSISTENCY | B_... | C_...
+    experiment_type: str
     turn_number: int
     prompt: str
     pressure_type: str = "NO_PRESSURE_BASELINE"
@@ -70,10 +60,11 @@ class EvalRecord:
     model: str
     provider: str
     temperature: float
+    seed: int | None = None
     response_latency_ms: float | None = None
     token_count: int | None = None
     conversation_id: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)  # raw output preserved
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
