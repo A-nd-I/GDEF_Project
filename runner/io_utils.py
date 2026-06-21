@@ -32,7 +32,7 @@ ANNOTATION_COLUMNS = [
 # run_stats.csv — technical metadata linkable by run_id + scenario_id + turn_number
 RUN_STATS_COLUMNS = [
     "run_id", "scenario_id", "turn_number", "model", "provider",
-    "temperature", "seed", "response_latency_ms", "token_count",
+    "temperature", "seed", "response_latency_ms", "token_count", "word_count",
     "timestamp", "conversation_id",
 ]
 

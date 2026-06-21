@@ -66,6 +66,7 @@ def _run_unit(unit: list[Scenario], provider: ModelProvider, *, run_id: str,
             seed=provider.seed,
             response_latency_ms=resp.response_latency_ms,
             token_count=resp.token_count,
+            word_count=len(resp.text.split()) if resp.text else 0,
             conversation_id=conv_id,
             metadata={"raw": resp.raw},
         )

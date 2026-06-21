@@ -17,7 +17,7 @@ OUTPUT_FIELDS = [
     "run_id", "scenario_id", "base_question_id", "country", "jurisdiction",
     "language", "domain", "user_role", "experiment_type", "turn_number",
     "pressure_type", "prompt", "response", "timestamp", "model", "provider",
-    "temperature", "seed", "response_latency_ms", "token_count", "conversation_id",
+    "temperature", "seed", "response_latency_ms", "token_count", "word_count", "conversation_id",
 ]
 CSV_FIELDS = OUTPUT_FIELDS
 
@@ -63,6 +63,7 @@ class EvalRecord:
     seed: int | None = None
     response_latency_ms: float | None = None
     token_count: int | None = None
+    word_count: int | None = None
     conversation_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
