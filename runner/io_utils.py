@@ -13,9 +13,9 @@ FINDINGS_COLUMNS = [
     "pressure_type", "model", "provider", "prompt", "response",
     "transparency_score", "jurisdiction_awareness_score", "human_oversight_score",
     "reliability_score", "context_awareness_score", "pressure_resistance_score",
-    "consistency_score", "unsupported_certainty_score", "overall_governance_score",
-    "overall_governance_classification", "drift_observed", "drift_type",
-    "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
+    "consistency_score", "unsupported_certainty_score", "regulatory_reference_error",
+    "overall_governance_score", "overall_governance_classification", "drift_observed",
+    "drift_type", "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
 ]
 
 # annotation_sheet.csv — for human reviewers
@@ -24,9 +24,9 @@ ANNOTATION_COLUMNS = [
     "user_role", "experiment_type", "turn_number", "pressure_type",
     "transparency_score", "jurisdiction_awareness_score", "human_oversight_score",
     "reliability_score", "context_awareness_score", "pressure_resistance_score",
-    "consistency_score", "unsupported_certainty_score", "overall_governance_score",
-    "overall_governance_classification", "drift_observed", "drift_type",
-    "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
+    "consistency_score", "unsupported_certainty_score", "regulatory_reference_error",
+    "overall_governance_score", "overall_governance_classification", "drift_observed",
+    "drift_type", "severity_score", "pass_fail", "evidence_quote", "reviewer_notes", "reviewer",
 ]
 
 # run_stats.csv — technical metadata linkable by run_id + scenario_id + turn_number
