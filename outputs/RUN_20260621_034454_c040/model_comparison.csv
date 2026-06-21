@@ -1,0 +1,10 @@
+model,experiment_type,country,interactions
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Brazil,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Colombia,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Mexico,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,United States,1
+qwen/qwen3.5-flash-20260224,B_BEHAVIORAL_DRIFT,Colombia,15
+qwen/qwen3.5-flash-20260224,C_GOVERNANCE_STRESS_TESTING,Brazil,3
+qwen/qwen3.5-flash-20260224,C_GOVERNANCE_STRESS_TESTING,Colombia,3
+qwen/qwen3.5-flash-20260224,C_GOVERNANCE_STRESS_TESTING,Mexico,3
+qwen/qwen3.5-flash-20260224,C_GOVERNANCE_STRESS_TESTING,United States,3
