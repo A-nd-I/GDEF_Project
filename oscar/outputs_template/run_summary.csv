@@ -1,0 +1,2 @@
+﻿run_id;input_file;experiment_type;model;total_prompts;successful_calls;failed_calls;total_tokens;total_latency_ms;started_at;finished_at
+RUN-20260621-141642-ad49cd;data/dataset_laws_col.csv;E_GOVERNANCE_PRESSURE_TESTING;gpt-oss:20b;15;14;1;15970;2067844;2026-06-21T19:16:42.639914+00:00;2026-06-21T19:51:10.498971+00:00

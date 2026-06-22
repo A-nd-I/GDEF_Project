@@ -31,25 +31,43 @@ def env(key, default=None):
 
 
 # Schemas
-RAW_FIELDS = [
+# Identifying / model context columns the runner fills in automatically.
+CONTEXT_FIELDS = [
     "run_id", "scenario_id", "base_question_id", "country", "jurisdiction",
     "language", "domain", "user_role", "experiment_type", "turn_number",
-    "pressure_type", "prompt", "response", "response_word_count", "model",
-    "timestamp", "status", "latency_ms", "completion_tokens", "total_tokens",
-    "finish_reason", "error",
+    "pressure_type", "model", "provider", "prompt", "response",
 ]
 
 # Empty columns reserved for manual governance review. Never auto-filled.
+# These are the fields the human researcher fills in by hand.
 REVIEW_FIELDS = [
-    "drift_observed", "drift_type", "severity_score",
-    "evidence_quote", "regulatory_reference_error",
-    "reviewer_notes", "reviewer", "review_date",
+    "transparency_score", "jurisdiction_awareness_score", "human_oversight_score",
+    "reliability_score", "context_awareness_score", "pressure_resistance_score",
+    "consistency_score", "unsupported_certainty_score", "regulatory_reference_error",
+    "overall_governance_score", "overall_governance_classification",
+    "drift_observed", "drift_type", "severity_score", "pass_fail",
+    "evidence_quote", "reviewer_notes", "reviewer",
+]
+
+FINDINGS_FIELDS = CONTEXT_FIELDS + REVIEW_FIELDS
+
+# annotation_sheet: trimmed context (no model/provider/prompt/response/jurisdiction)
+# plus the same empty review columns for the reviewer to fill.
+ANNOTATION_CONTEXT_FIELDS = [
+    "run_id", "scenario_id", "base_question_id", "country", "language",
+    "domain", "user_role", "experiment_type", "turn_number", "pressure_type",
+]
+
+# Telemetry computed per call, kept on the row for the run summary/console only
+TELEMETRY_FIELDS = [
+    "response_word_count", "timestamp", "status", "latency_ms",
+    "completion_tokens", "total_tokens", "finish_reason", "error",
 ]
 
 SUMMARY_FIELDS = [
     "run_id", "input_file", "experiment_type", "model",
     "total_prompts", "successful_calls", "failed_calls",
-    "total_tokens", "total_latency_ms",
+    "total_tokens", "total_words", "total_latency_ms",
     "started_at", "finished_at",
 ]
 
@@ -130,8 +148,9 @@ def _fail(message, started):
 
 
 # --- Output writers ----------------------------------------------------------
-def build_raw_row(run_id, scenario, result, model):
-    row = {f: "" for f in RAW_FIELDS}
+def build_raw_row(run_id, scenario, result, model, provider):
+    # Review columns are seeded blank and never auto-filled.
+    row = {f: "" for f in FINDINGS_FIELDS + TELEMETRY_FIELDS}
     for f in ("scenario_id", "base_question_id", "country", "jurisdiction",
               "language", "domain", "user_role", "experiment_type",
               "turn_number", "pressure_type", "prompt"):
@@ -139,6 +158,7 @@ def build_raw_row(run_id, scenario, result, model):
     row.update({
         "run_id": run_id,
         "model": model,
+        "provider": provider,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "response": result["response"],
         "response_word_count": len((result["response"] or "").split()),
@@ -152,39 +172,17 @@ def build_raw_row(run_id, scenario, result, model):
     return row
 
 
-def write_findings(rows, path, fmt, delimiter):
-    """Raw fields + empty human-review columns. Review columns stay blank."""
-    headers = RAW_FIELDS + REVIEW_FIELDS
-    if fmt == "xlsx":
-        try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Alignment, Font
-            from openpyxl.utils import get_column_letter
-        except ImportError:
-            path = os.path.splitext(path)[0] + ".csv"
-            fmt = "csv"
-            print("NOTE: openpyxl not installed; writing findings_matrix.csv instead.")
-    if fmt == "xlsx":
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "findings"
-        ws.append(headers)
-        for c in ws[1]:
-            c.font = Font(name="Arial", bold=True)
-            c.alignment = Alignment(vertical="top", wrap_text=True)
+def write_annotation_sheet(rows, path, delimiter):
+    """Context columns + empty human-review columns. Review columns stay blank.
+
+    Always written as CSV.
+    """
+    headers = ANNOTATION_CONTEXT_FIELDS + REVIEW_FIELDS
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=headers, delimiter=delimiter)
+        w.writeheader()
         for r in rows:
-            ws.append([r.get(h, "") for h in headers])
-        ws.freeze_panes = "A2"
-        for i, h in enumerate(headers, start=1):
-            ws.column_dimensions[get_column_letter(i)].width = (
-                60 if h in ("prompt", "response") else 18)
-        wb.save(path)
-    else:
-        with open(path, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.DictWriter(f, fieldnames=headers, delimiter=delimiter)
-            w.writeheader()
-            for r in rows:
-                w.writerow({h: r.get(h, "") for h in headers})
+            w.writerow({h: r.get(h, "") for h in headers})
     return path
 
 
@@ -192,6 +190,7 @@ def write_summary(path, run_id, cfg, rows, started_at, finished_at, delimiter):
     ok = sum(1 for r in rows if r["status"] == "ok")
     exp = sorted({r["experiment_type"] for r in rows if r["experiment_type"]})
     total_tokens = sum(int(r.get("total_tokens") or 0) for r in rows)
+    total_words = sum(int(r.get("response_word_count") or 0) for r in rows)
     total_latency_ms = sum(int(r.get("latency_ms") or 0) for r in rows)
     summary = {
         "run_id": run_id,
@@ -202,6 +201,7 @@ def write_summary(path, run_id, cfg, rows, started_at, finished_at, delimiter):
         "successful_calls": ok,
         "failed_calls": len(rows) - ok,
         "total_tokens": total_tokens,
+        "total_words": total_words,
         "total_latency_ms": total_latency_ms,
         "started_at": started_at,
         "finished_at": finished_at,
@@ -216,11 +216,13 @@ def write_summary(path, run_id, cfg, rows, started_at, finished_at, delimiter):
 def run(cfg):
     scenarios = select(read_scenarios(cfg["input_file"]),
                        cfg["country"], cfg["language"], cfg["num"])
-    os.makedirs(cfg["output_dir"], exist_ok=True)
-    run_id = "RUN-" + datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
-    raw_path = os.path.join(cfg["output_dir"], "raw_outputs.csv")
-    findings_path = os.path.join(cfg["output_dir"], "findings_matrix." + cfg["findings_format"])
-    summary_path = os.path.join(cfg["output_dir"], "run_summary.csv")
+    # Each run gets its own folder: outputs/RUN_YYYYMMDD_HHMMSS_<id>
+    run_id = "RUN_" + datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
+    run_dir = os.path.join(cfg["output_dir"], run_id)
+    os.makedirs(run_dir, exist_ok=True)
+    findings_path = os.path.join(run_dir, "findings_matrix.csv")
+    annotation_path = os.path.join(run_dir, "annotation_sheet.csv")
+    summary_path = os.path.join(run_dir, "run_summary.csv")
     delim = cfg["csv_delimiter"]
 
     print("=" * 72)
@@ -237,8 +239,9 @@ def run(cfg):
 
     started_at = datetime.now(timezone.utc).isoformat()
     collected = []
-    raw_f = open(raw_path, "w", newline="", encoding="utf-8-sig")
-    writer = csv.DictWriter(raw_f, fieldnames=RAW_FIELDS, delimiter=delim)
+    findings_f = open(findings_path, "w", newline="", encoding="utf-8-sig")
+    writer = csv.DictWriter(findings_f, fieldnames=FINDINGS_FIELDS,
+                            delimiter=delim, extrasaction="ignore")
     writer.writeheader()
 
     try:
@@ -250,9 +253,9 @@ def run(cfg):
             else:
                 result = call_model(scenario["prompt"], cfg)
 
-            row = build_raw_row(run_id, scenario, result, cfg["model"])
+            row = build_raw_row(run_id, scenario, result, cfg["model"], cfg["provider"])
             writer.writerow(row)
-            raw_f.flush()
+            findings_f.flush()
             collected.append(row)
 
             tag = scenario.get("scenario_id", f"#{i}")
@@ -266,9 +269,9 @@ def run(cfg):
     except KeyboardInterrupt:
         print(f"\n\n Interrupted. {len(collected)} responses saved so far.")
     finally:
-        raw_f.close()
+        findings_f.close()
         finished_at = datetime.now(timezone.utc).isoformat()
-        findings_path = write_findings(collected, findings_path, cfg["findings_format"], delim)
+        annotation_path = write_annotation_sheet(collected, annotation_path, delim)
         write_summary(summary_path, run_id, cfg, collected, started_at, finished_at, delim)
         total_ms = sum(int(r.get("latency_ms") or 0) for r in collected)
         total_tok = sum(int(r.get("total_tokens") or 0) for r in collected)
@@ -276,9 +279,9 @@ def run(cfg):
     print(f"\n Done. {len(collected)} rows collected.")
     print(f"   total time:   {total_ms} ms")
     print(f"   total tokens: {total_tok}")
-    print(f"   raw outputs   -> {raw_path}")
-    print(f"   findings      -> {findings_path}  (review columns left empty)")
-    print(f"   run summary   -> {summary_path}")
+    print(f"   findings matrix  -> {findings_path}  (full record, review columns empty)")
+    print(f"   annotation sheet -> {annotation_path}  (review columns left empty)")
+    print(f"   run summary      -> {summary_path}")
 
 
 # --- CLI ---------------------------------------------------------------------
@@ -286,15 +289,15 @@ def build_config():
     load_env(os.environ.get("ENV_FILE", ".env"))
     ap = argparse.ArgumentParser(description="Governance Pressure Testing runner")
     ap.add_argument("--model")
+    ap.add_argument("--provider", help="provider label recorded in outputs (e.g. ollama, openai)")
     ap.add_argument("--api-key")
     ap.add_argument("--base-url")
     ap.add_argument("--input", help="CSV scenario bank")
     ap.add_argument("--output-dir")
-    ap.add_argument("--country", help="Colombia | Brazil | all")
-    ap.add_argument("--language", help="es | pt | all")
+    ap.add_argument("--country", help="match the country column literally, or 'all'")
+    ap.add_argument("--language", help="match the language column literally (e.g. Spanish), or 'all'")
     ap.add_argument("--num", type=int, help="limit number of prompts")
     ap.add_argument("--temp", type=float)
-    ap.add_argument("--findings-format", choices=["xlsx", "csv"])
     ap.add_argument("--csv-delimiter", help="CSV separator for outputs (default ;)")
     ap.add_argument("--dry-run", action="store_true",
                     help="exercise the pipeline without calling the model")
@@ -303,15 +306,15 @@ def build_config():
     seed_raw = env("SEED")
     return {
         "model": a.model or env("MODEL", "gpt-oss:20b"),
+        "provider": a.provider or env("PROVIDER", ""),
         "api_key": a.api_key or env("API_KEY", "ollama"),
         "base_url": a.base_url or env("BASE_URL", "http://localhost:11434/v1"),
-        "input_file": a.input or env("INPUT_FILE", "data/pressure_tests_30.csv"),
+        "input_file": a.input or env("INPUT_FILE", "data/dataset_laws_col.csv"),
         "output_dir": a.output_dir or env("OUTPUT_DIR", "outputs"),
         "country": a.country or env("COUNTRY", "all"),
         "language": a.language or env("LANGUAGE", "all"),
         "num": a.num if a.num is not None else (int(env("NUM")) if env("NUM") else None),
         "temperature": a.temp if a.temp is not None else float(env("TEMPERATURE", "0.8")),
-        "findings_format": a.findings_format or env("FINDINGS_FORMAT", "xlsx"),
         "csv_delimiter": a.csv_delimiter or env("CSV_DELIMITER", ";"),
         "timeout": int(env("TIMEOUT_SECONDS", "300")),
         "pause": float(env("PAUSE_BETWEEN", "0")),
