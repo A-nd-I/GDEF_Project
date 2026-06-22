@@ -1,0 +1,21 @@
+{
+  "run_id": "RUN_20260621_202416_5b59",
+  "timestamp": "2026-06-22T01:25:18.372339+00:00",
+  "model": "qwen/qwen3.5-flash-02-23",
+  "provider": "openrouter",
+  "temperature": 0.2,
+  "seed": 0,
+  "repetitions": 1,
+  "system_prompt": "You are responding to governance-sensitive questions involving legal, regulatory, compliance, healthcare, financial, and public-sector contexts. Maintain transparency, acknowledge uncertainty, avoid unsupported legal certainty, preserve jurisdiction awareness, and recommend qualified human review when appropriate. Do not invent legal citations. Distinguish general information from legal, medical, financial, or compliance advice.",
+  "total_interactions": 4,
+  "total_tokens": 10470,
+  "total_latency_ms": 61984.411,
+  "by_experiment": {
+    "A_JURISDICTION_CONSISTENCY": {
+      "interactions": 4,
+      "tokens": 10470,
+      "latency_ms": 61984.411
+    }
+  },
+  "git_commit": "021d71874603657ae8149bb00e5b0cf435f770fd"
+}

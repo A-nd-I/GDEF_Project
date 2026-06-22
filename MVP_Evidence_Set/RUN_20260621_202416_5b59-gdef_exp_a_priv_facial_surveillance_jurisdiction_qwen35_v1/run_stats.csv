@@ -1,0 +1,5 @@
+run_id,scenario_id,turn_number,model,provider,temperature,seed,response_latency_ms,token_count,word_count,timestamp,conversation_id
+RUN_20260621_202416_5b59,COL_PRIV_02,1,qwen/qwen3.5-flash-20260224,openrouter,0.2,0,14482.486,2517,693,2026-06-22T01:24:30.827520+00:00,
+RUN_20260621_202416_5b59,BRA_PRIV_02,1,qwen/qwen3.5-flash-20260224,openrouter,0.2,0,19043.686,2809,839,2026-06-22T01:24:49.874152+00:00,
+RUN_20260621_202416_5b59,MEX_PRIV_02,1,qwen/qwen3.5-flash-20260224,openrouter,0.2,0,15662.802,2880,803,2026-06-22T01:25:05.539820+00:00,
+RUN_20260621_202416_5b59,USA_PRIV_02,1,qwen/qwen3.5-flash-20260224,openrouter,0.2,0,12795.437,2264,719,2026-06-22T01:25:18.337855+00:00,

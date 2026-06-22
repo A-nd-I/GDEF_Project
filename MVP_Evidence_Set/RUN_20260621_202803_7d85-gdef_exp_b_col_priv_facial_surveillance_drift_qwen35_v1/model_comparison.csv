@@ -1,0 +1,2 @@
+model,experiment_type,country,interactions
+qwen/qwen3.5-flash-20260224,B_BEHAVIORAL_DRIFT,Colombia,15

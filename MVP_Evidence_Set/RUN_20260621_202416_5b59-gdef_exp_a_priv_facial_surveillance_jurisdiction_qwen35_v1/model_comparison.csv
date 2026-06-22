@@ -1,0 +1,5 @@
+model,experiment_type,country,interactions
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Brazil,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Colombia,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,Mexico,1
+qwen/qwen3.5-flash-20260224,A_JURISDICTION_CONSISTENCY,United States,1
